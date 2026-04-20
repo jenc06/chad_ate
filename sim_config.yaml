@@ -1,0 +1,109 @@
+# PyVISA-sim configuration for ATE power sweep demo
+# Defines a simulated Signal Generator (GPIB::1) and Spectrum Analyzer (GPIB::2)
+#
+# Property getters/setters use the {q, r} dict form required by pyvisa-sim.
+# Write-only commands (*RST, :OUTP ON/OFF) are listed as dialogues with r: "".
+#
+# The SA's "MEAS:POW?" returns a sentinel (-999.0); instruments.py replaces
+# it with the physics-based amplifier compression model output.
+
+spec: "1.1"
+
+devices:
+  signal generator:
+    eom:
+      GPIB INSTR:
+        q: "\n"
+        r: "\n"
+    error: "ERROR"
+    dialogues:
+      - q: "*IDN?"
+        r: "Simulated,SigGen9000,SN001,FW1.0"
+      - q: "*RST"
+        r: ""
+      - q: "*CLS"
+        r: ""
+      - q: ":OUTP ON"
+        r: ""
+      - q: ":OUTP OFF"
+        r: ""
+    properties:
+      frequency:
+        default: 1.0e9
+        getter:
+          q: ":FREQ?"
+          r: "{:.6e}"
+        setter:
+          q: ":FREQ {:.6e}"
+        specs:
+          type: float
+          min: 1.0e6
+          max: 40.0e9
+      power:
+        default: -30.0
+        getter:
+          q: ":POW?"
+          r: "{:.2f}"
+        setter:
+          q: ":POW {:.2f}"
+        specs:
+          type: float
+          min: -130.0
+          max: 30.0
+
+  spectrum analyzer:
+    eom:
+      GPIB INSTR:
+        q: "\n"
+        r: "\n"
+    error: "ERROR"
+    dialogues:
+      - q: "*IDN?"
+        r: "Simulated,SpecAn8000,SN002,FW2.0"
+      - q: "*RST"
+        r: ""
+      - q: "*CLS"
+        r: ""
+      # Sentinel value — instruments.py applies the amplifier model instead
+      - q: "MEAS:POW?"
+        r: "-999.0"
+    properties:
+      center_frequency:
+        default: 1.0e9
+        getter:
+          q: ":FREQ:CENT?"
+          r: "{:.6e}"
+        setter:
+          q: ":FREQ:CENT {:.6e}"
+        specs:
+          type: float
+          min: 1.0e6
+          max: 26.5e9
+      span:
+        default: 1.0e6
+        getter:
+          q: ":FREQ:SPAN?"
+          r: "{:.6e}"
+        setter:
+          q: ":FREQ:SPAN {:.6e}"
+        specs:
+          type: float
+          min: 1.0
+          max: 26.5e9
+      ref_level:
+        default: 30.0
+        getter:
+          q: ":DISP:WIND:TRAC:Y:RLEV?"
+          r: "{:.1f}"
+        setter:
+          q: ":DISP:WIND:TRAC:Y:RLEV {:.1f}"
+        specs:
+          type: float
+          min: -170.0
+          max: 30.0
+
+resources:
+  "GPIB::1::INSTR":
+    device: signal generator
+  "GPIB::2::INSTR":
+    device: spectrum analyzer
